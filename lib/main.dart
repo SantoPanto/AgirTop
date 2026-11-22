@@ -632,9 +632,10 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
     final screenSize = MediaQuery.sizeOf(context);
     final isDesktop = isDesktopPlatform;
 
-    // Cihaz boyutları (hem mobilde hem de PC'de en uygun en-boy oranını korur)
-    final double deviceWidth = math.min(screenSize.width * 0.88, 360.0);
-    final double deviceHeight = math.min(screenSize.height * 0.78, 580.0);
+    // Fotoğraftaki Valorant telefonunun gerçek oranına (~0.56) uygun boyutlandırma
+    final double maxH = math.min(screenSize.height * 0.80, 620.0);
+    final double deviceWidth = math.min(screenSize.width * 0.86, maxH * 0.57);
+    final double deviceHeight = deviceWidth / 0.57;
 
     return Focus(
       autofocus: true,
@@ -834,7 +835,257 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
 }
 
 // ============================================================================
-// TAKTİKSEL TELEFON ÇERÇEVESİ (BRIMSTONE BRACER FRAME - RESPONSIVE)
+// VALORANT TELEFON POLİGON CLIPPER'LARI (FOTOĞRAFA BİREBİR KALKAN FORMU)
+// ============================================================================
+class ValorantPhoneBodyClipper extends CustomClipper<Path> {
+  const ValorantPhoneBodyClipper();
+
+  @override
+  Path getClip(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Path()
+      ..moveTo(w * 0.14, 0)
+      ..lineTo(w * 0.86, 0)
+      ..lineTo(w * 0.97, h * 0.055)
+      ..lineTo(w * 0.985, h * 0.12)
+      ..lineTo(w * 0.95, h * 0.68)
+      ..lineTo(w * 0.76, h * 0.79)
+      ..lineTo(w * 0.71, h * 0.95)
+      ..lineTo(w * 0.62, h)
+      ..lineTo(w * 0.38, h)
+      ..lineTo(w * 0.29, h * 0.95)
+      ..lineTo(w * 0.24, h * 0.79)
+      ..lineTo(w * 0.05, h * 0.68)
+      ..lineTo(w * 0.015, h * 0.12)
+      ..lineTo(w * 0.03, h * 0.055)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class ValorantPhoneScreenClipper extends CustomClipper<Path> {
+  const ValorantPhoneScreenClipper();
+
+  @override
+  Path getClip(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Path()
+      ..moveTo(w * 0.12, 0)
+      ..lineTo(w * 0.35, 0)
+      // Tam ortadan aşağıya doğru gelen dikdörtgensel/trapez çentik (Notch)
+      ..lineTo(w * 0.375, h * 0.058)
+      ..lineTo(w * 0.625, h * 0.058)
+      ..lineTo(w * 0.65, 0)
+      ..lineTo(w * 0.88, 0)
+      // Sağ ve sol köşeler wifi/batarya ikonlarını kapatmayacak şekilde hafif eğimli
+      ..lineTo(w * 0.985, h * 0.062)
+      ..lineTo(w * 0.965, h * 0.855)
+      ..lineTo(w * 0.56, h * 0.995)
+      ..lineTo(w * 0.44, h * 0.995)
+      ..lineTo(w * 0.035, h * 0.855)
+      ..lineTo(w * 0.015, h * 0.062)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
+class _ValorantScreenBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+
+  _ValorantScreenBorderPainter({
+    required this.color,
+    this.strokeWidth = 2.4,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = const ValorantPhoneScreenClipper().getClip(size);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeJoin = StrokeJoin.miter;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ValorantScreenBorderPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
+  }
+}
+
+/// Fotoğraftaki Brimstone telefonunun dış kasasını, katmanlarını ve sarı üçgen butonunu çizer
+class _ValorantPhoneShellPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final bodyPath = const ValorantPhoneBodyClipper().getClip(size);
+
+    // 1. Ana Kasa Gradyanı (Koyu antrasit / metalik gri)
+    final bodyPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF393E46),
+          Color(0xFF23272D),
+          Color(0xFF15181C),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, w, h));
+    canvas.drawPath(bodyPath, bodyPaint);
+
+    // 2. Dış Kenar Aydınlık Bevel Çizgisi
+    final bevelPaint = Paint()
+      ..color = const Color(0xFF555C66)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+    canvas.drawPath(bodyPath, bevelPaint);
+
+    // 3. İç Kasa Çerçeve Basamağı (Koyu recessed bezel + üst orta notch uzantısı)
+    final innerBezelPath = Path()
+      ..moveTo(w * 0.16, h * 0.025)
+      ..lineTo(w * 0.84, h * 0.025)
+      ..lineTo(w * 0.925, h * 0.075)
+      ..lineTo(w * 0.905, h * 0.665)
+      ..lineTo(w * 0.71, h * 0.76)
+      ..lineTo(w * 0.29, h * 0.76)
+      ..lineTo(w * 0.095, h * 0.665)
+      ..lineTo(w * 0.075, h * 0.075)
+      ..close();
+    canvas.drawPath(innerBezelPath, Paint()..color = const Color(0xFF101317));
+    canvas.drawPath(
+      innerBezelPath,
+      Paint()
+        ..color = const Color(0xFF424852)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    // 4. Üst Orta Aşağıya Doğru Gelen Dikdörtgensel/Trapez Çentik (Notch) & Hoparlör
+    final centerNotchPath = Path()
+      ..moveTo(w * 0.36, 0)
+      ..lineTo(w * 0.64, 0)
+      ..lineTo(w * 0.615, h * 0.082)
+      ..lineTo(w * 0.385, h * 0.082)
+      ..close();
+    canvas.drawPath(centerNotchPath, Paint()..color = const Color(0xFF22262C));
+    canvas.drawPath(
+      centerNotchPath,
+      Paint()
+        ..color = const Color(0xFF4C535E)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    final notchRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(w * 0.5, h * 0.035), width: w * 0.14, height: h * 0.010),
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(notchRect, Paint()..color = const Color(0xFF0E1014));
+
+    // 5. Sağ Üst-Orta Yan Buton Çıkıntısı
+    final sideBtnRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 0.955, h * 0.25, w * 0.035, h * 0.11),
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(sideBtnRect, Paint()..color = const Color(0xFF484F59));
+
+    // 6. Alt V-Yuvası ve Alt Çene Katman Çizgisi
+    final chinLinePath = Path()
+      ..moveTo(w * 0.24, h * 0.79)
+      ..lineTo(w * 0.42, h * 0.855)
+      ..lineTo(w * 0.58, h * 0.855)
+      ..lineTo(w * 0.76, h * 0.79);
+    canvas.drawPath(
+      chinLinePath,
+      Paint()
+        ..color = const Color(0xFF0C0E11)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.0,
+    );
+    canvas.drawPath(
+      chinLinePath.shift(const Offset(0, 2)),
+      Paint()
+        ..color = const Color(0xFF3E444D)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    // 7. Alt Çene Koyu Tutamaç Girintisi
+    final gripPath = Path()
+      ..moveTo(w * 0.34, h * 0.895)
+      ..lineTo(w * 0.66, h * 0.895)
+      ..lineTo(w * 0.61, h * 0.965)
+      ..lineTo(w * 0.39, h * 0.965)
+      ..close();
+    canvas.drawPath(gripPath, Paint()..color = const Color(0xFF101316));
+    canvas.drawLine(
+      Offset(w * 0.41, h * 0.93),
+      Offset(w * 0.59, h * 0.93),
+      Paint()
+        ..color = const Color(0xFF3B4048)
+        ..strokeWidth = 2.0
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // 8. Alt Ortadaki İkonik Parlak Sarı Üçgen Detayı
+    final triCenterX = w * 0.50;
+    final triTopY = h * 0.742;
+    final triBottomY = h * 0.818;
+    final triHalfW = w * 0.082;
+
+    // Sarı üçgenin koyu çerçeve yuvası
+    final triSocket = Path()
+      ..moveTo(triCenterX - triHalfW - 4, triTopY - 3)
+      ..lineTo(triCenterX + triHalfW + 4, triTopY - 3)
+      ..lineTo(triCenterX, triBottomY + 5)
+      ..close();
+    canvas.drawPath(triSocket, Paint()..color = const Color(0xFF0B0D10));
+
+    // Parlak sarı / kehribar üçgen
+    final triPath = Path()
+      ..moveTo(triCenterX - triHalfW, triTopY)
+      ..lineTo(triCenterX + triHalfW, triTopY)
+      ..lineTo(triCenterX, triBottomY)
+      ..close();
+
+    final triPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: const [
+          Color(0xFFFFE45C),
+          Color(0xFFFFC814),
+          Color(0xFFE59200),
+        ],
+      ).createShader(Rect.fromLTWH(triCenterX - triHalfW, triTopY, triHalfW * 2, triBottomY - triTopY));
+    canvas.drawPath(triPath, triPaint);
+
+    // Sarı üçgen üst parlama çizgisi
+    canvas.drawLine(
+      Offset(triCenterX - triHalfW + 3, triTopY + 1.5),
+      Offset(triCenterX + triHalfW - 3, triTopY + 1.5),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.65)
+        ..strokeWidth = 1.4,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ============================================================================
+// TAKTİKSEL TELEFON ÇERÇEVESİ (VALORANT BİREBİR CİHAZ GÖVDESİ)
 // ============================================================================
 class TacticalDeviceContainer extends StatelessWidget {
   final Widget child;
@@ -848,125 +1099,69 @@ class TacticalDeviceContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double outerCut = 24.0;
-    const double innerCut = 16.0;
+    // Fotoğraftaki telefonda hem ön hem arka sayfa parlak turkuaz çerçeve kullanır
+    const Color currentNeonColor = Color(0xFF5BF5F5);
 
-    // Neon çerçeve rengi (Ekran 1 için Cyan, Ekran 2 için Valorant Kırmızısı/Turuncu)
-    final Color currentNeonColor = isFirstScreen
-        ? ValorantTheme.cyanNeon
-        : ValorantTheme.valorantRed;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final h = constraints.maxHeight;
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Kalın ve koyu renkli taktiksel dış kasa (RepaintBoundary ile statik katman izole edilir)
-        RepaintBoundary(
-          child: ClipPath(
-            clipper: const ChamferClipper(cutSize: outerCut),
-            child: Container(
-              decoration: BoxDecoration(
-                color: ValorantTheme.surfaceBezel,
-                border: Border.all(
-                  color: const Color(0xFF2C353D),
-                  width: 2.0,
-                ),
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            // 1. Dış Telefon Gövdesi (RepaintBoundary ile izole statik katman)
+            RepaintBoundary(
+              child: CustomPaint(
+                size: Size(w, h),
+                painter: _ValorantPhoneShellPainter(),
               ),
-              child: Stack(
-                children: [
-                  // Dış kasada endüstriyel vida/köşe detayları
-                  const Positioned(
-                    top: 10,
-                    left: 14,
-                    child: HardwareRivet(),
-                  ),
-                  const Positioned(
-                    top: 10,
-                    right: 14,
-                    child: HardwareRivet(),
-                  ),
-                  const Positioned(
-                    bottom: 10,
-                    left: 14,
-                    child: HardwareRivet(),
-                  ),
-                  const Positioned(
-                    bottom: 10,
-                    right: 14,
-                    child: HardwareRivet(),
-                  ),
+            ),
 
-                  // Taktiksel Markalama
-                  const Positioned(
-                    top: 10,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Text(
-                        'KINGDOM // BRACER-MK4',
-                        style: TextStyle(
-                          color: Color(0xFF4C5864),
-                          fontSize: 9,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'monospace',
+            // 2. İç Ekran Poligonu (Fotoğraftaki kalkan/V-tabanlı ekran alanı)
+            Positioned(
+              top: h * 0.042,
+              left: w * 0.105,
+              right: w * 0.105,
+              bottom: h * 0.275,
+              child: ClipPath(
+                clipper: const ValorantPhoneScreenClipper(),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Ekran içeriği (FittedBox ile taşma korumalı)
+                    Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: SizedBox(
+                          width: 260,
+                          height: 390,
+                          child: child,
                         ),
                       ),
                     ),
-                  ),
-
-                  // Cihazın Alt Ortasındaki Küçük Sarı Üçgen Detayı
-                  Positioned(
-                    bottom: 6,
-                    left: 0,
-                    right: 0,
-                    child: Center(
+                    // Parlak poligon kenarlığı
+                    IgnorePointer(
                       child: CustomPaint(
-                        size: const Size(18, 14),
-                        painter: YellowTrianglePainter(),
+                        painter: _ValorantScreenBorderPainter(
+                          color: currentNeonColor,
+                          strokeWidth: 2.6,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Cihazın İç Ekranı (İçeriği saran neon çerçeve ve ekran alanı)
-        // FittedBox ile sarmalanarak her pencere/ekran boyutunda asla overflow vermez
-        Padding(
-          padding: const EdgeInsets.only(top: 28, bottom: 28, left: 16, right: 16),
-          child: ClipPath(
-            clipper: const ChamferClipper(cutSize: innerCut),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 140),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0C1217),
-                border: Border.all(
-                  color: currentNeonColor,
-                  width: 2.0,
-                ),
-              ),
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: SizedBox(
-                    width: 320,
-                    height: 480,
-                    child: child,
-                  ),
+                  ],
                 ),
               ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
 
 // ============================================================================
-// İÇERİK - EKRAN 1: BRIMSTONE PORTRESİ, "ME", VE SES DALGASI
+// İÇERİK - EKRAN 1: FOTOĞRAFA BİREBİR BRIMSTONE + "Ben" + ÇİFT SES DALGASI
 // ============================================================================
 class TacticalScreenOne extends StatelessWidget {
   const TacticalScreenOne({super.key});
@@ -974,89 +1169,194 @@ class TacticalScreenOne extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF080D11),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF104F5B),
+            Color(0xFF1B7B8C),
+            Color(0xFF0E4652),
+          ],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          // Üst durum çubuğu
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                color: ValorantTheme.cyanNeon.withValues(alpha: 0.15),
-                child: const Text(
-                  'CHAN 01 // COMMS',
-                  style: TextStyle(
-                    color: ValorantTheme.cyanNeon,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-              const Row(
-                children: [
-                  Icon(Icons.wifi, color: ValorantTheme.cyanNeon, size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    'LIVE',
-                    style: TextStyle(
-                      color: ValorantTheme.cyanNeon,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          // Üst Kısım: Brimstone Portresi (Asset Placeholder)
-          const BrimstoneAvatarWidget(),
-
-          // Altında "Me" metni
-          Column(
-            children: [
-              const Text(
-                'ME',
-                style: TextStyle(
-                  color: ValorantTheme.textWhite,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 4.0,
-                  fontFamily: 'monospace',
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'COMMANDER // BRIMSTONE',
-                style: TextStyle(
-                  color: ValorantTheme.cyanNeon.withValues(alpha: 0.8),
-                  fontSize: 10,
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-
-          // Animasyonlu Ses Dalgası (Waveform)
-          const TacticalWaveformWidget(color: ValorantTheme.cyanNeon),
-
-          // Alt teknik metin
-          Text(
-            'FREQUENCY ENCRYPTED // TACTICAL AUDIO STREAM',
-            style: TextStyle(
-              color: ValorantTheme.textMuted.withValues(alpha: 0.7),
-              fontSize: 8,
-              letterSpacing: 1.5,
-              fontFamily: 'monospace',
+          // İnce yatay scanline ve kenar cetvel detayları
+          IgnorePointer(
+            child: CustomPaint(
+              painter: _ScreenScanlinesPainter(),
             ),
           ),
+
+          // Ana İçerik Sütunu (Üstte sinyal/wifi ve batarya göstergeleri + çentik boşluğu)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 5, 16, 16),
+            child: Column(
+              children: [
+                const _PhoneTopStatusBar(),
+                const SizedBox(height: 10),
+
+                // 1. Üst Kısım: Brimstone Portre Penceresi
+                const Expanded(
+                  flex: 52,
+                  child: BrimstoneAvatarWidget(),
+                ),
+                const SizedBox(height: 8),
+
+                // 2. Orta Kısım: "Ben" Bandı (Fotoğraftaki "Me" yerine "Ben")
+                Container(
+                  height: 30,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF092B33).withValues(alpha: 0.65),
+                    border: Border.symmetric(
+                      horizontal: BorderSide(
+                        color: const Color(0xFF6CF7F7).withValues(alpha: 0.45),
+                        width: 1.0,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildTechDots(),
+                      const Text(
+                        'Ben',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      _buildTechDots(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // 3. Alt-Orta Kısım: "00" + Çift Sinüs Ses Dalgası Paneli
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 3),
+                      child: Text(
+                        '00',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          fontFamily: 'monospace',
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      height: 46,
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF08252C).withValues(alpha: 0.65),
+                        border: Border.symmetric(
+                          horizontal: BorderSide(
+                            color: const Color(0xFF6CF7F7).withValues(alpha: 0.35),
+                            width: 1.0,
+                          ),
+                        ),
+                      ),
+                      child: const TacticalWaveformWidget(color: Colors.white),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // 4. En Alt Kısım: Fotoğraftaki ince segment göstergeleri
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (i) {
+                    return Container(
+                      width: i == 1 ? 34 : 22,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: i == 1 ? 0.55 : 0.25),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 14),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTechDots() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 10, height: 1.5, color: const Color(0xFF6CF7F7).withValues(alpha: 0.55)),
+        const SizedBox(width: 3),
+        Container(width: 3, height: 1.5, color: const Color(0xFF6CF7F7).withValues(alpha: 0.75)),
+      ],
+    );
+  }
+}
+
+/// Ekran içi yatay tarama çizgileri ve kenar cetvel işaretleri
+class _ScreenScanlinesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scanPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.08)
+      ..strokeWidth = 1.0;
+
+    for (double y = 0; y < size.height; y += 4) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), scanPaint);
+    }
+
+    // Sol ve sağ kenar küçük tick çizgileri
+    final tickPaint = Paint()
+      ..color = const Color(0xFF74FAFA).withValues(alpha: 0.45)
+      ..strokeWidth = 1.2;
+
+    for (double y = size.height * 0.52; y < size.height * 0.78; y += 8) {
+      canvas.drawLine(Offset(8, y), Offset(13, y), tickPaint);
+      canvas.drawLine(Offset(size.width - 13, y), Offset(size.width - 8, y), tickPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Telefonun her iki ekranında da kullanılan ortak üst durum çubuğu (Wifi & Batarya)
+class _PhoneTopStatusBar extends StatelessWidget {
+  const _PhoneTopStatusBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = const Color(0xFF84FCFC).withValues(alpha: 0.9);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.signal_cellular_alt, color: iconColor, size: 13),
+              const SizedBox(width: 4),
+              Icon(Icons.wifi, color: iconColor, size: 13),
+            ],
+          ),
+          Icon(Icons.battery_charging_full, color: iconColor, size: 15),
         ],
       ),
     );
@@ -1064,7 +1364,7 @@ class TacticalScreenOne extends StatelessWidget {
 }
 
 // ============================================================================
-// İÇERİK - EKRAN 2: FARKLI TAKTİKSEL VERİ ("BAĞLANTI KURULDU" / YÖRÜNGE SALDIRISI)
+// İÇERİK - EKRAN 2: ARKA SAYFA (CELESTIAL_CARD OYUNCU KARTI + "AĞIR TOP" ÜNVANI)
 // ============================================================================
 class TacticalScreenTwo extends StatelessWidget {
   const TacticalScreenTwo({super.key});
@@ -1072,134 +1372,183 @@ class TacticalScreenTwo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF11080A),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF104F5B),
+            Color(0xFF1B7B8C),
+            Color(0xFF0E4652),
+          ],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          // Üst durum çubuğu
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  color: ValorantTheme.valorantRed.withValues(alpha: 0.2),
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'ORBITAL LINK',
-                      style: TextStyle(
-                        color: ValorantTheme.valorantRed,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                        fontFamily: 'monospace',
+          // İnce yatay scanline arka plan efekti
+          IgnorePointer(
+            child: CustomPaint(
+              painter: _ScreenScanlinesPainter(),
+            ),
+          ),
+
+          // Ana İçerik Sütunu
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 5, 16, 14),
+            child: Column(
+              children: [
+                // 1. Üst Durum Çubuğu (Çentiğin solunda Wifi, sağında Batarya tam görünür)
+                const _PhoneTopStatusBar(),
+                const SizedBox(height: 12),
+
+                // 2. Oyuncu Kartı Bölmesi (Celestial_Card - Boğa kafası & dolunay tam görünür)
+                Expanded(
+                  flex: 54,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFF7BFBFB).withValues(alpha: 0.85),
+                        width: 1.5,
+                      ),
+                      color: const Color(0xFF0A333C).withValues(alpha: 0.45),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFFE6C88B).withValues(alpha: 0.6),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Image.asset(
+                        'assets/images/celestial_card.jpg',
+                        fit: BoxFit.cover,
+                        alignment: Alignment.topCenter,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(Icons.image_not_supported, color: Colors.white54),
+                          );
+                        },
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.radar, color: ValorantTheme.valorantRed, size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    'SYNCED',
-                    style: TextStyle(
-                      color: ValorantTheme.valorantRed,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
+                const SizedBox(height: 10),
+
+                // 3. Oyuncu Ünvanı Bölmesi ("AĞIR TOP" - fotoğraftaki "SIRILSIKLAM" bandı)
+                Container(
+                  width: double.infinity,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.22),
+                    border: Border.symmetric(
+                      horizontal: BorderSide(
+                        color: const Color(0xFF84FCFC).withValues(alpha: 0.65),
+                        width: 1.2,
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
-
-          // Taktiksel Radar / Hedef Kilitleme Görseli
-          const TacticalTargetReticleWidget(),
-
-          // "Bağlantı Kuruldu" Başlığı ve Taktiksel Veri
-          Column(
-            children: [
-              const FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  'BAĞLANTI KURULDU',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: ValorantTheme.valorantRed,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.5,
-                    fontFamily: 'monospace',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: ValorantTheme.valorantRed.withValues(alpha: 0.15),
-                  border: Border.all(color: ValorantTheme.valorantRed.withValues(alpha: 0.5)),
-                ),
-                child: const FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'AĞIR TOP: YÖRÜNGE SALDIRISI HAZIR',
-                    style: TextStyle(
-                      color: ValorantTheme.textWhite,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      fontFamily: 'monospace',
+                  child: const Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'AĞIR TOP',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.2,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(height: 10),
 
-          // Taktiksel Telemetri / Koordinat Tablosu
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            color: Colors.black.withValues(alpha: 0.4),
-            child: const Column(
-              children: [
+                // 4. Orta-Alt Kısım: Sol çift ikon + Sinüs Ses Dalgası + Sağ dikey seviye çubukları
+                SizedBox(
+                  height: 44,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Sol taraftaki çift açık turkuaz kutu ikonu
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF9DFDFD).withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                          const SizedBox(width: 2.5),
+                          Container(
+                            width: 7,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF9DFDFD).withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Akıcı Sinüs Ses Dalgası
+                      const Expanded(
+                        child: TacticalWaveformWidget(color: Colors.white),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Sağ kenardaki merdiven/seviye çubukları
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: List.generate(7, (i) {
+                          return Container(
+                            width: 12,
+                            height: 2.2,
+                            margin: const EdgeInsets.symmetric(vertical: 1.5),
+                            color: const Color(0xFF84FCFC).withValues(
+                              alpha: i < 5 ? 0.75 : 0.35,
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 5. En Alt Kısım: İki eğimli paralelkenar gösterge (Sol turkuaz, Sağ beyaz)
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('TARGET:', style: TextStyle(color: ValorantTheme.textMuted, fontSize: 8, fontFamily: 'monospace')),
-                    Text('34.05° N, 118.24° W', style: TextStyle(color: ValorantTheme.textWhite, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                    Transform(
+                      transform: Matrix4.skewX(-0.35),
+                      child: Container(
+                        width: 34,
+                        height: 8,
+                        color: const Color(0xFF56C9D4).withValues(alpha: 0.55),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Transform(
+                      transform: Matrix4.skewX(-0.35),
+                      child: Container(
+                        width: 34,
+                        height: 8,
+                        color: Colors.white.withValues(alpha: 0.92),
+                      ),
+                    ),
                   ],
                 ),
-                SizedBox(height: 3),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('RADIUS:', style: TextStyle(color: ValorantTheme.textMuted, fontSize: 8, fontFamily: 'monospace')),
-                    Text('850 METERS', style: TextStyle(color: ValorantTheme.valorantRed, fontSize: 8, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
-                  ],
-                ),
+                const SizedBox(height: 12),
               ],
-            ),
-          ),
-
-          // Alt teknik metin
-          const FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              'SATELLITE BEAM ALIGNED // READY',
-              style: TextStyle(
-                color: ValorantTheme.textMuted,
-                fontSize: 8,
-                letterSpacing: 1.2,
-                fontFamily: 'monospace',
-              ),
             ),
           ),
         ],
@@ -1212,91 +1561,58 @@ class TacticalScreenTwo extends StatelessWidget {
 // ÖZEL GRAFİK VE YARDIMCI WIDGET'LAR
 // ============================================================================
 
-/// Brimstone Ajan Portresi (Asset Placeholder & Taktiksel İkon Çerçevesi)
+/// Brimstone Ajan Portresi (Fotoğraftaki ince turkuaz çerçeveli portre penceresi)
 class BrimstoneAvatarWidget extends StatelessWidget {
   const BrimstoneAvatarWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const double cut = 14.0;
-
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Dış neon çerçeve
-        CustomPaint(
-          size: const Size(120, 120),
-          painter: ChamferBorderPainter(
-            cutSize: cut,
-            borderColor: ValorantTheme.cyanNeon,
-            borderWidth: 1.5,
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF103F49),
+        border: Border.all(
+          color: const Color(0xFF72FAFA).withValues(alpha: 0.75),
+          width: 1.5,
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/brimstone_portrait.jpg',
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            errorBuilder: (context, error, stackTrace) {
+              return Image.asset(
+                'assets/images/brimstone.png',
+                fit: BoxFit.cover,
+              );
+            },
           ),
-          child: ClipPath(
-            clipper: const ChamferClipper(cutSize: cut),
-            child: Container(
-              width: 120,
-              height: 120,
-              color: const Color(0xFF142028),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Eğer gerçek görsel asset varsa yükler, yoksa taktiksel ikon portresi çizer
-                  Image.asset(
-                    'assets/images/brimstone.png',
-                    fit: BoxFit.cover,
-                    width: 120,
-                    height: 120,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Placeholder Taktiksel Komutan Portresi
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.military_tech,
-                            size: 48,
-                            color: ValorantTheme.cyanNeon.withValues(alpha: 0.85),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            color: ValorantTheme.cyanNeon.withValues(alpha: 0.2),
-                            child: const Text(
-                              'BRIMSTONE',
-                              style: TextStyle(
-                                color: ValorantTheme.cyanNeon,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.5,
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+          // Fotoğraftaki gibi alt kısımda ekranla bütünleşen hafif turkuaz gölge geçişi
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.65, 1.0],
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF0E4B57).withValues(alpha: 0.75),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-
-        // Köşe taktiksel çentikleri
-        Positioned(
-          top: 0,
-          right: 0,
-          child: Container(
-            width: 8,
-            height: 8,
-            color: ValorantTheme.cyanNeon,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// Animasyonlu Ses Dalgası (Tactical Waveform)
+/// Animasyonlu Çift Sinüs Ses Dalgası (Fotoğraftaki akıcı beyaz/turkuaz ses dalgaları)
 class TacticalWaveformWidget extends StatefulWidget {
   final Color color;
 
@@ -1318,7 +1634,7 @@ class _TacticalWaveformWidgetState extends State<TacticalWaveformWidget>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1600),
     )..repeat();
   }
 
@@ -1333,8 +1649,8 @@ class _TacticalWaveformWidgetState extends State<TacticalWaveformWidget>
     // RepaintBoundary + CustomPaint(repaint: _controller) ile sıfır widget rebuild (120 FPS akıcılık)
     return RepaintBoundary(
       child: SizedBox(
-        width: 180,
-        height: 38,
+        width: double.infinity,
+        height: 36,
         child: CustomPaint(
           painter: _WaveformPainter(
             animation: _controller,
@@ -1357,36 +1673,63 @@ class _WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const int barCount = 24;
-    const double barWidth = 3.5;
-    const double spacing = 3.6;
-    const double totalWidth = barCount * barWidth + (barCount - 1) * spacing;
-    final double startX = (size.width - totalWidth) / 2;
-    final double centerY = size.height / 2;
-    final double t = animation.value * 2 * math.pi;
+    final w = size.width;
+    final h = size.height;
+    final centerY = h / 2;
+    final t = animation.value * 2 * math.pi;
 
-    final paint = Paint()..style = PaintingStyle.fill;
+    // Ortadaki ince yatay referans çizgisi
+    canvas.drawLine(
+      Offset(0, centerY),
+      Offset(w, centerY),
+      Paint()
+        ..color = const Color(0xFF72FAFA).withValues(alpha: 0.3)
+        ..strokeWidth = 1.0,
+    );
 
-    for (int index = 0; index < barCount; index++) {
-      final phase = (index / barCount) * 2 * math.pi;
-      final wave = math.sin(t + phase) * 0.5 + 0.5;
-      final norm = (index - 11.5) / 12.0;
-      final centerWeight = 1.0 - (norm * norm * 0.6);
-      final barHeight = math.max(6.0, 36.0 * wave * centerWeight);
+    // 1. Birincil parlak beyaz sinüs dalgası
+    final primaryPath = Path();
+    // 2. İkincil kesişen ince yarı saydam dalga
+    final secondaryPath = Path();
 
-      paint.color = color.withValues(alpha: 0.35 + (wave * 0.65));
+    const int steps = 60;
+    for (int i = 0; i <= steps; i++) {
+      final normX = i / steps;
+      final x = normX * w;
+      // Uçlara doğru yumuşak sönümleme (envelope)
+      final envelope = math.sin(normX * math.pi);
 
-      final x = startX + index * (barWidth + spacing);
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(x + barWidth / 2, centerY),
-          width: barWidth,
-          height: barHeight,
-        ),
-        const Radius.circular(1),
-      );
-      canvas.drawRRect(rect, paint);
+      final y1 = centerY +
+          math.sin(normX * 4.5 * math.pi + t) * (h * 0.38) * envelope;
+      final y2 = centerY +
+          math.sin(normX * 3.8 * math.pi - t * 1.2 + 1.1) * (h * 0.28) * envelope;
+
+      if (i == 0) {
+        primaryPath.moveTo(x, y1);
+        secondaryPath.moveTo(x, y2);
+      } else {
+        primaryPath.lineTo(x, y1);
+        secondaryPath.lineTo(x, y2);
+      }
     }
+
+    canvas.drawPath(
+      secondaryPath,
+      Paint()
+        ..color = const Color(0xFF9DFDFD).withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..strokeCap = StrokeCap.round,
+    );
+
+    canvas.drawPath(
+      primaryPath,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..strokeCap = StrokeCap.round,
+    );
   }
 
   @override

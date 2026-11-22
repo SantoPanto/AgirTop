@@ -29,11 +29,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    // 5. TelefonEkrani üzerinde Ekran 1 ("ME") görüntülenmeli
-    expect(find.text('ME'), findsOneWidget);
-    expect(find.text('BAĞLANTI KURULDU'), findsNothing);
+    // 5. TelefonEkrani üzerinde Ekran 1 ("Ben") görüntülenmeli
+    expect(find.text('Ben'), findsOneWidget);
+    expect(find.byType(TacticalScreenTwo), findsNothing);
 
-    // 6. Taktiksel cihaza tıklandığında (onTap) Ekran 2'ye geçmeli ("BAĞLANTI KURULDU")
+    // 6. Taktiksel cihaza tıklandığında (onTap) Ekran 2'ye geçmeli ("AĞIR TOP" ünvanı)
     final deviceContainer = find.byType(TacticalDeviceContainer);
     expect(deviceContainer, findsOneWidget);
 
@@ -43,18 +43,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(find.text('BAĞLANTI KURULDU'), findsOneWidget);
-    expect(find.text('ME'), findsNothing);
+    expect(find.byType(TacticalScreenTwo), findsOneWidget);
+    expect(find.descendant(of: find.byType(TacticalScreenTwo), matching: find.text('AĞIR TOP')), findsOneWidget);
+    expect(find.text('Ben'), findsNothing);
 
-    // 7. Tekrar tıklandığında sonsuz döngü gereği Ekran 1'e geri dönmeli ("ME")
+    // 7. Tekrar tıklandığında sonsuz döngü gereği Ekran 1'e geri dönmeli ("Ben")
     await tester.tap(deviceContainer);
     await tester.pump();
     for (int i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(find.text('ME'), findsOneWidget);
-    expect(find.text('BAĞLANTI KURULDU'), findsNothing);
+    expect(find.text('Ben'), findsOneWidget);
+    expect(find.byType(TacticalScreenTwo), findsNothing);
   });
 
   testWidgets('Agir Top PC keyboard shortcuts test (Space bar toggle and ESC back)', (WidgetTester tester) async {
@@ -68,7 +69,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(find.text('ME'), findsOneWidget);
+    expect(find.text('Ben'), findsOneWidget);
 
     // PC: Boşluk (Space) tuşuna basıldığında döngü tetiklenip Ekran 2'ye geçmeli
     await tester.sendKeyEvent(LogicalKeyboardKey.space);
@@ -77,8 +78,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(find.text('BAĞLANTI KURULDU'), findsOneWidget);
-    expect(find.text('ME'), findsNothing);
+    expect(find.byType(TacticalScreenTwo), findsOneWidget);
+    expect(find.descendant(of: find.byType(TacticalScreenTwo), matching: find.text('AĞIR TOP')), findsOneWidget);
+    expect(find.text('Ben'), findsNothing);
 
     // PC: Escape (ESC) tuşuna basıldığında Ana Menü'ye dönmeli
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -109,7 +111,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(find.text('ME'), findsOneWidget);
+    expect(find.text('Ben'), findsOneWidget);
 
     // 2. Widescreen PC 1080p simülasyonu
     tester.view.physicalSize = const Size(1920, 1080);
@@ -125,7 +127,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    expect(find.text('BAĞLANTI KURULDU'), findsOneWidget);
+    expect(find.byType(TacticalScreenTwo), findsOneWidget);
   });
 
   testWidgets('Agir Top rapid tap stress test (30 consecutive fast taps)', (WidgetTester tester) async {
@@ -151,8 +153,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
-    // 31 (tek sayı) tıklama sonrası Ekran 2 ("BAĞLANTI KURULDU") temiz şekilde görünmelidir
-    expect(find.text('BAĞLANTI KURULDU'), findsOneWidget);
-    expect(find.text('ME'), findsNothing);
+    // 31 (tek sayı) tıklama sonrası Ekran 2 ("AĞIR TOP") temiz şekilde görünmelidir
+    expect(find.byType(TacticalScreenTwo), findsOneWidget);
+    expect(find.text('Ben'), findsNothing);
   });
 }
