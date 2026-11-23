@@ -30,12 +30,11 @@ void main() {
 
   // Generate a pleasant tactile click / blip sound
   for (int i = 0; i < numSamples; i++) {
-    final t = i / sampleRate;
     final decay = (1.0 - (i / numSamples));
     final sample = (decay * 16000 * (i % 20 < 10 ? 1 : -1)).toInt();
     byteData.setInt16(44 + i * 2, sample, Endian.little);
   }
 
   File('assets/sounds/transition.wav').writeAsBytesSync(byteData.buffer.asUint8List());
-  print('transition.wav created successfully.');
+  stdout.writeln('transition.wav created successfully.');
 }

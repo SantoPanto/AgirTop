@@ -62,7 +62,7 @@ void main() {
   writeChunk(png, 'IEND', Uint8List(0));
 
   File('assets/images/brimstone.png').writeAsBytesSync(png.toBytes());
-  print('assets/images/brimstone.png created successfully!');
+  stdout.writeln('assets/images/brimstone.png created successfully!');
 }
 
 void writeChunk(BytesBuilder builder, String type, Uint8List data) {
