@@ -427,11 +427,11 @@ class AnaMenuEkrani extends StatelessWidget {
 
           // Sağ üst köşe versiyon bilgisi
           Positioned(
-            top: 24,
+            top: 24 + MediaQuery.paddingOf(context).top,
             right: 24,
-            child: Text(
-              isDesktopPlatform ? 'SYS.VER.2.4 [PC]' : 'SYS.VER.2.4 [MOB]',
-              style: const TextStyle(
+            child: const Text(
+              'AgırTop Ver0.1',
+              style: TextStyle(
                 color: ValorantTheme.textMuted,
                 fontSize: 10,
                 letterSpacing: 2.0,
@@ -516,30 +516,46 @@ class AnaMenuEkrani extends StatelessWidget {
             ),
           ),
 
-          // Alt Köşe Çizgileri
+          // Alt Köşe Çizgileri ve Alt Orta İmza
           Positioned(
-            bottom: 20,
+            bottom: 16 + MediaQuery.paddingOf(context).bottom,
             left: 24,
             right: 24,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(
-                  child: Text(
-                    isDesktopPlatform ? 'VAL // PC' : 'VAL // MOB',
-                    style: const TextStyle(color: ValorantTheme.textMuted, fontSize: 10, letterSpacing: 1.5),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        isDesktopPlatform ? 'VAL // PC' : 'VAL // MOB',
+                        style: const TextStyle(color: ValorantTheme.textMuted, fontSize: 10, letterSpacing: 1.5),
+                      ),
+                    ),
+                    Container(
+                      width: math.min(size.width * 0.2, 120.0),
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                    const Flexible(
+                      child: Text(
+                        'TACTICAL HUD',
+                        textAlign: TextAlign.end,
+                        style: TextStyle(color: ValorantTheme.textMuted, fontSize: 10, letterSpacing: 1.5),
+                      ),
+                    ),
+                  ],
                 ),
-                Container(
-                  width: math.min(size.width * 0.2, 120.0),
-                  height: 1,
-                  color: Colors.white.withValues(alpha: 0.15),
-                ),
-                const Flexible(
-                  child: Text(
-                    'TACTICAL HUD',
-                    textAlign: TextAlign.end,
-                    style: TextStyle(color: ValorantTheme.textMuted, fontSize: 10, letterSpacing: 1.5),
+                const SizedBox(height: 6),
+                Text(
+                  'By SantoPanto',
+                  style: TextStyle(
+                    color: ValorantTheme.textMuted.withValues(alpha: 0.85),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2.0,
+                    fontFamily: 'monospace',
                   ),
                 ),
               ],
@@ -564,6 +580,10 @@ class TelefonEkrani extends StatefulWidget {
 class _TelefonEkraniState extends State<TelefonEkrani> {
   // Ekran 1 ve Ekran 2 durum takibi (Navigator kullanılmaz, döngü bu state ile sağlanır)
   bool _isFirstScreen = true;
+
+  // Özelleştirilebilir telefon ayarları
+  String _selectedAgent = 'Brimstone';
+  String _displayName = 'Ben';
 
   // Düşük gecikmeli ses oynatıcı
   late final AudioPlayer _audioPlayer;
@@ -627,6 +647,318 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
     });
   }
 
+  /// "Telefon Ayarları" ana pop-up menüsünü açar
+  void _showPhoneSettingsDialog() {
+    try {
+      HapticFeedback.selectionClick();
+    } catch (_) {}
+
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 340),
+            child: CustomPaint(
+              painter: ChamferBorderPainter(
+                cutSize: 16,
+                borderColor: ValorantTheme.cyanNeon,
+                borderWidth: 1.8,
+              ),
+              child: ClipPath(
+                clipper: const ChamferClipper(cutSize: 16),
+                child: Container(
+                  color: const Color(0xFF101820),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Başlık ve Kapat Butonu
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.settings, color: ValorantTheme.cyanNeon, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'TELEFON AYARLARI',
+                                    style: TextStyle(
+                                      color: ValorantTheme.textWhite,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 1.6,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(dialogContext),
+                              child: const Icon(Icons.close, color: ValorantTheme.textMuted, size: 20),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Container(height: 1, color: Colors.white.withValues(alpha: 0.12)),
+                      const SizedBox(height: 16),
+
+                      // Seçenek 1: Ajanı Değiştir
+                      _SettingsOptionTile(
+                        icon: Icons.person_search_outlined,
+                        title: 'Ajanı Değiştir',
+                        subtitle: 'Aktif Ajan: $_selectedAgent',
+                        accentColor: ValorantTheme.cyanNeon,
+                        onTap: () {
+                          Navigator.pop(dialogContext);
+                          _showAgentPickerDialog();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Seçenek 2: İsim Değiştir
+                      _SettingsOptionTile(
+                        icon: Icons.edit_outlined,
+                        title: 'İsim Değiştir',
+                        subtitle: 'Görünür İsim: $_displayName',
+                        accentColor: ValorantTheme.cyanNeon,
+                        onTap: () {
+                          Navigator.pop(dialogContext);
+                          _showNameEditorDialog();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Seçenek 3: Varsayılana Geri Dön
+                      _SettingsOptionTile(
+                        icon: Icons.restart_alt,
+                        title: 'Varsayılana Geri Dön',
+                        subtitle: 'Brimstone // "Ben"',
+                        accentColor: ValorantTheme.valorantRed,
+                        onTap: () {
+                          Navigator.pop(dialogContext);
+                          if (mounted) {
+                            setState(() {
+                              _selectedAgent = 'Brimstone';
+                              _displayName = 'Ben';
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 1- "Ajanı Değiştir" seçim ekranı
+  void _showAgentPickerDialog() {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.78),
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 380, maxHeight: 520),
+            child: CustomPaint(
+              painter: ChamferBorderPainter(
+                cutSize: 16,
+                borderColor: ValorantTheme.cyanNeon,
+                borderWidth: 1.8,
+              ),
+              child: ClipPath(
+                clipper: const ChamferClipper(cutSize: 16),
+                child: Container(
+                  color: const Color(0xFF101820),
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'AJANI DEĞİŞTİR',
+                            style: TextStyle(
+                              color: ValorantTheme.textWhite,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.0,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(dialogContext),
+                              child: const Icon(Icons.close, color: ValorantTheme.textMuted, size: 20),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'VALORANT AJAN PROTOKOLÜ // ${valorantAgents.length} AJAN',
+                        style: const TextStyle(
+                          color: ValorantTheme.textMuted,
+                          fontSize: 10,
+                          letterSpacing: 1.2,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: ListView.separated(
+                          itemCount: valorantAgents.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final agent = valorantAgents[index];
+                            final isSelected = agent.name == _selectedAgent;
+                            return MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _selectedAgent = agent.name;
+                                    });
+                                  }
+                                  Navigator.pop(dialogContext);
+                                },
+                                child: ClipPath(
+                                  clipper: const ChamferClipper(cutSize: 10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? agent.accentColor.withValues(alpha: 0.22)
+                                          : ValorantTheme.surfaceDark.withValues(alpha: 0.85),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? agent.accentColor
+                                            : Colors.white.withValues(alpha: 0.12),
+                                        width: isSelected ? 1.5 : 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 38,
+                                          height: 38,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: agent.accentColor.withValues(alpha: 0.2),
+                                            border: Border.all(color: agent.accentColor.withValues(alpha: 0.7)),
+                                          ),
+                                          child: agent.portraitAsset != null
+                                              ? Image.asset(
+                                                  agent.portraitAsset!,
+                                                  width: 38,
+                                                  height: 38,
+                                                  fit: BoxFit.cover,
+                                                  alignment: Alignment.topCenter,
+                                                )
+                                              : Text(
+                                                  agent.name.substring(0, 1),
+                                                  style: TextStyle(
+                                                    color: agent.accentColor,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontFamily: 'monospace',
+                                                  ),
+                                                ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                agent.name.toUpperCase(),
+                                                style: const TextStyle(
+                                                  color: ValorantTheme.textWhite,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 1.4,
+                                                  fontFamily: 'monospace',
+                                                ),
+                                              ),
+                                              Text(
+                                                agent.role,
+                                                style: TextStyle(
+                                                  color: agent.accentColor.withValues(alpha: 0.9),
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.bold,
+                                                  letterSpacing: 1.5,
+                                                  fontFamily: 'monospace',
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          Icon(Icons.check_circle, color: agent.accentColor, size: 18),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 2- "İsim Değiştir" metin giriş penceresi (Maksimum 20 karakter)
+  void _showNameEditorDialog() {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.78),
+      builder: (dialogContext) {
+        return _NameEditorDialog(
+          initialName: _displayName,
+          onSave: (newName) {
+            if (mounted) {
+              setState(() {
+                _displayName = newName;
+              });
+            }
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.sizeOf(context);
@@ -667,9 +999,9 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
               ),
             ),
 
-            // 2. Üst Taktiksel Bar (Geri dönüş butonu - AppBar kullanılmaz)
+            // 2. Üst Taktiksel Bar (Sol üst: Menü, Sağ üst: Telefon Ayarları)
             Positioned(
-              top: 20,
+              top: 16 + MediaQuery.paddingOf(context).top,
               left: 20,
               right: 20,
               child: Row(
@@ -690,14 +1022,14 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
                         child: Container(
                           color: ValorantTheme.surfaceDark.withValues(alpha: 0.85),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.arrow_back_ios, color: ValorantTheme.valorantRed, size: 12),
-                              const SizedBox(width: 4),
+                              Icon(Icons.arrow_back_ios, color: ValorantTheme.valorantRed, size: 12),
+                              SizedBox(width: 4),
                               Text(
-                                isDesktop ? 'MENÜ [ESC]' : 'MENÜ',
-                                style: const TextStyle(
+                                'Menü',
+                                style: TextStyle(
                                   color: ValorantTheme.textWhite,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w800,
@@ -711,37 +1043,48 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Cihaz Durum Bilgisi
+                  const SizedBox(width: 10),
+                  // Sağ Üst: Telefon Ayarları Butonu
                   Flexible(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: ValorantTheme.yellowAccent,
-                            shape: BoxShape.circle,
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _showPhoneSettingsDialog,
+                        child: CustomPaint(
+                          painter: ChamferBorderPainter(
+                            cutSize: 8,
+                            borderColor: ValorantTheme.cyanNeon.withValues(alpha: 0.7),
+                            borderWidth: 1.2,
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              isDesktop ? 'LINKED // PC' : 'LINKED // MOB',
-                              style: const TextStyle(
-                                color: ValorantTheme.textWhite,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.5,
-                                fontFamily: 'monospace',
+                          child: ClipPath(
+                            clipper: const ChamferClipper(cutSize: 8),
+                            child: Container(
+                              color: ValorantTheme.surfaceDark.withValues(alpha: 0.9),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              child: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.settings, color: ValorantTheme.cyanNeon, size: 14),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'TELEFON AYARLARI',
+                                      style: TextStyle(
+                                        color: ValorantTheme.textWhite,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.2,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
@@ -778,9 +1121,12 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
                           );
                         },
                         child: _isFirstScreen
-                            ? const RepaintBoundary(
-                                key: ValueKey('ScreenOne'),
-                                child: TacticalScreenOne(),
+                            ? RepaintBoundary(
+                                key: ValueKey('ScreenOne_${_selectedAgent}_$_displayName'),
+                                child: TacticalScreenOne(
+                                  agentName: _selectedAgent,
+                                  displayName: _displayName,
+                                ),
                               )
                             : const RepaintBoundary(
                                 key: ValueKey('ScreenTwo'),
@@ -793,38 +1139,78 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
               ),
             ),
 
-            // 4. Alt Kısım: Kullanıcıyı yönlendiren taktiksel ipucu (Mobil/PC uyumlu)
+            // 4. Alt Bar: Sol altta LINKED göstergesi, sağ/ortada yönlendirme ipucu
             Positioned(
-              bottom: 24,
-              left: 16,
-              right: 16,
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isDesktop ? Icons.mouse_outlined : Icons.touch_app_outlined,
-                        color: ValorantTheme.textMuted.withValues(alpha: 0.8),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        isDesktop
-                            ? 'CIHAZA TIKLA VEYA [BOŞLUK] // [ESC] GERİ'
-                            : 'CIHAZA DOKUN // MODU DEĞIŞTIR',
-                        style: TextStyle(
-                          color: ValorantTheme.textMuted.withValues(alpha: 0.8),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2.0,
-                          fontFamily: 'monospace',
+              bottom: 16 + MediaQuery.paddingOf(context).bottom,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Sol Alt: Cihaz Durum (LINKED) Göstergesi
+                  Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: ValorantTheme.yellowAccent,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              isDesktop ? 'LINKED // PC' : 'LINKED // MOB',
+                              style: const TextStyle(
+                                color: ValorantTheme.textWhite,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  // Sağ Alt: Kullanıcıyı yönlendiren taktiksel ipucu
+                  Flexible(
+                    flex: 2,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isDesktop ? Icons.mouse_outlined : Icons.touch_app_outlined,
+                            color: ValorantTheme.textMuted.withValues(alpha: 0.8),
+                            size: 15,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            isDesktop
+                                ? 'TIKLA / [BOŞLUK] // [ESC] GERİ'
+                                : 'CIHAZA DOKUN // MODU DEĞIŞTIR',
+                            style: TextStyle(
+                              color: ValorantTheme.textMuted.withValues(alpha: 0.8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.5,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1161,10 +1547,17 @@ class TacticalDeviceContainer extends StatelessWidget {
 }
 
 // ============================================================================
-// İÇERİK - EKRAN 1: FOTOĞRAFA BİREBİR BRIMSTONE + "Ben" + ÇİFT SES DALGASI
+// İÇERİK - EKRAN 1: FOTOĞRAFA BİREBİR AJAN PORTRESİ + İSİM + ÇİFT SES DALGASI
 // ============================================================================
 class TacticalScreenOne extends StatelessWidget {
-  const TacticalScreenOne({super.key});
+  final String agentName;
+  final String displayName;
+
+  const TacticalScreenOne({
+    super.key,
+    this.agentName = 'Brimstone',
+    this.displayName = 'Ben',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1198,14 +1591,14 @@ class TacticalScreenOne extends StatelessWidget {
                 const _PhoneTopStatusBar(),
                 const SizedBox(height: 10),
 
-                // 1. Üst Kısım: Brimstone Portre Penceresi
-                const Expanded(
+                // 1. Üst Kısım: Seçili Ajan Portre Penceresi
+                Expanded(
                   flex: 52,
-                  child: BrimstoneAvatarWidget(),
+                  child: BrimstoneAvatarWidget(agentName: agentName),
                 ),
                 const SizedBox(height: 8),
 
-                // 2. Orta Kısım: "Ben" Bandı (Fotoğraftaki "Me" yerine "Ben")
+                // 2. Orta Kısım: İsim Bandı (Varsayılan: "Ben", Maksimum 20 karakter korumalı)
                 Container(
                   height: 30,
                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -1222,15 +1615,23 @@ class TacticalScreenOne extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildTechDots(),
-                      const Text(
-                        'Ben',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            displayName,
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 6),
                       _buildTechDots(),
                     ],
                   ),
@@ -1561,12 +1962,463 @@ class TacticalScreenTwo extends StatelessWidget {
 // ÖZEL GRAFİK VE YARDIMCI WIDGET'LAR
 // ============================================================================
 
-/// Brimstone Ajan Portresi (Fotoğraftaki ince turkuaz çerçeveli portre penceresi)
-class BrimstoneAvatarWidget extends StatelessWidget {
-  const BrimstoneAvatarWidget({super.key});
+// ============================================================================
+// VALORANT AJAN LİSTESİ VE AYARLAR YARDIMCI BİLEŞENLERİ
+// ============================================================================
+class ValorantAgent {
+  final String name;
+  final String role;
+  final Color accentColor;
+  final String? portraitAsset;
+
+  const ValorantAgent({
+    required this.name,
+    required this.role,
+    required this.accentColor,
+    this.portraitAsset,
+  });
+}
+
+const List<ValorantAgent> valorantAgents = [
+  ValorantAgent(
+    name: 'Brimstone',
+    role: 'CONTROLLER',
+    accentColor: Color(0xFFFF7A2F),
+    portraitAsset: 'assets/images/brimstone_portrait.jpg',
+  ),
+  ValorantAgent(
+    name: 'Jett',
+    role: 'DUELIST',
+    accentColor: Color(0xFF66E2FF),
+    portraitAsset: 'assets/images/agents/jett.jpg',
+  ),
+  ValorantAgent(
+    name: 'Reyna',
+    role: 'DUELIST',
+    accentColor: Color(0xFFD95BFF),
+    portraitAsset: 'assets/images/agents/reyna.jpg',
+  ),
+  ValorantAgent(
+    name: 'Sage',
+    role: 'SENTINEL',
+    accentColor: Color(0xFF3BF0C5),
+    portraitAsset: 'assets/images/agents/sage.jpg',
+  ),
+  ValorantAgent(
+    name: 'Sova',
+    role: 'INITIATOR',
+    accentColor: Color(0xFF4CA6FF),
+    portraitAsset: 'assets/images/agents/sova.jpg',
+  ),
+  ValorantAgent(
+    name: 'Omen',
+    role: 'CONTROLLER',
+    accentColor: Color(0xFF7B68EE),
+    portraitAsset: 'assets/images/agents/omen.jpg',
+  ),
+  ValorantAgent(
+    name: 'Phoenix',
+    role: 'DUELIST',
+    accentColor: Color(0xFFFF6B35),
+    portraitAsset: 'assets/images/agents/phoenix.jpg',
+  ),
+  ValorantAgent(
+    name: 'Viper',
+    role: 'CONTROLLER',
+    accentColor: Color(0xFF38E54D),
+    portraitAsset: 'assets/images/agents/viper.jpg',
+  ),
+  ValorantAgent(
+    name: 'Cypher',
+    role: 'SENTINEL',
+    accentColor: Color(0xFF9EC5FF),
+    portraitAsset: 'assets/images/agents/cypher.jpg',
+  ),
+  ValorantAgent(
+    name: 'Breach',
+    role: 'INITIATOR',
+    accentColor: Color(0xFFE07A2E),
+    portraitAsset: 'assets/images/agents/breach.jpg',
+  ),
+  ValorantAgent(
+    name: 'Killjoy',
+    role: 'SENTINEL',
+    accentColor: Color(0xFFFFD426),
+    portraitAsset: 'assets/images/agents/killjoy.jpg',
+  ),
+  ValorantAgent(
+    name: 'Raze',
+    role: 'DUELIST',
+    accentColor: Color(0xFFFF8C42),
+    portraitAsset: 'assets/images/agents/raze.jpg',
+  ),
+  ValorantAgent(
+    name: 'Skye',
+    role: 'INITIATOR',
+    accentColor: Color(0xFF5DE2A5),
+    portraitAsset: 'assets/images/agents/skye.jpg',
+  ),
+  ValorantAgent(
+    name: 'Yoru',
+    role: 'DUELIST',
+    accentColor: Color(0xFF4361EE),
+    portraitAsset: 'assets/images/agents/yoru.jpg',
+  ),
+  ValorantAgent(
+    name: 'Astra',
+    role: 'CONTROLLER',
+    accentColor: Color(0xFFA855F7),
+    portraitAsset: 'assets/images/agents/astra.jpg',
+  ),
+  ValorantAgent(
+    name: 'KAY/O',
+    role: 'INITIATOR',
+    accentColor: Color(0xFF4EA8DE),
+    portraitAsset: 'assets/images/agents/kayo.jpg',
+  ),
+  ValorantAgent(
+    name: 'Chamber',
+    role: 'SENTINEL',
+    accentColor: Color(0xFFE9C46A),
+    portraitAsset: 'assets/images/agents/chamber.jpg',
+  ),
+  ValorantAgent(
+    name: 'Neon',
+    role: 'DUELIST',
+    accentColor: Color(0xFF00D2FF),
+    portraitAsset: 'assets/images/agents/neon.jpg',
+  ),
+  ValorantAgent(
+    name: 'Fade',
+    role: 'INITIATOR',
+    accentColor: Color(0xFF9D4EDD),
+    portraitAsset: 'assets/images/agents/fade.jpg',
+  ),
+  ValorantAgent(
+    name: 'Harbor',
+    role: 'CONTROLLER',
+    accentColor: Color(0xFF2EC4B6),
+    portraitAsset: 'assets/images/agents/harbor.jpg',
+  ),
+  ValorantAgent(
+    name: 'Gekko',
+    role: 'INITIATOR',
+    accentColor: Color(0xFFAACC00),
+    portraitAsset: 'assets/images/agents/gekko.jpg',
+  ),
+  ValorantAgent(
+    name: 'Deadlock',
+    role: 'SENTINEL',
+    accentColor: Color(0xFFBDB2FF),
+    portraitAsset: 'assets/images/agents/deadlock.jpg',
+  ),
+  ValorantAgent(
+    name: 'Iso',
+    role: 'DUELIST',
+    accentColor: Color(0xFF7209B7),
+    portraitAsset: 'assets/images/agents/iso.jpg',
+  ),
+  ValorantAgent(
+    name: 'Clove',
+    role: 'CONTROLLER',
+    accentColor: Color(0xFFFF66B3),
+    portraitAsset: 'assets/images/agents/clove.jpg',
+  ),
+  ValorantAgent(
+    name: 'Vyse',
+    role: 'SENTINEL',
+    accentColor: Color(0xFFC77DFF),
+    portraitAsset: 'assets/images/agents/vyse.jpg',
+  ),
+  ValorantAgent(
+    name: 'Tejo',
+    role: 'INITIATOR',
+    accentColor: Color(0xFFF4A261),
+    portraitAsset: 'assets/images/agents/tejo.jpg',
+  ),
+];
+
+class _SettingsOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _SettingsOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ClipPath(
+          clipper: const ChamferClipper(cutSize: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: ValorantTheme.surfaceDark,
+              border: Border.all(
+                color: accentColor.withValues(alpha: 0.45),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: accentColor, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: ValorantTheme.textWhite,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.0,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: ValorantTheme.textMuted.withValues(alpha: 0.9),
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: accentColor.withValues(alpha: 0.8), size: 18),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NameEditorDialog extends StatefulWidget {
+  final String initialName;
+  final ValueChanged<String> onSave;
+
+  const _NameEditorDialog({
+    required this.initialName,
+    required this.onSave,
+  });
+
+  @override
+  State<_NameEditorDialog> createState() => _NameEditorDialogState();
+}
+
+class _NameEditorDialogState extends State<_NameEditorDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final trimmed = _controller.text.trim();
+    if (trimmed.isNotEmpty) {
+      widget.onSave(trimmed.length > 20 ? trimmed.substring(0, 20) : trimmed);
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 340),
+        child: CustomPaint(
+          painter: ChamferBorderPainter(
+            cutSize: 16,
+            borderColor: ValorantTheme.cyanNeon,
+            borderWidth: 1.8,
+          ),
+          child: ClipPath(
+            clipper: const ChamferClipper(cutSize: 16),
+            child: Container(
+              color: const Color(0xFF101820),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'İSİM DEĞİŞTİR',
+                        style: TextStyle(
+                          color: ValorantTheme.textWhite,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.0,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.close, color: ValorantTheme.textMuted, size: 20),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _controller,
+                    autofocus: true,
+                    maxLength: 20,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(20),
+                    ],
+                    onSubmitted: (_) => _submit(),
+                    style: const TextStyle(
+                      color: ValorantTheme.textWhite,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'monospace',
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Yeni isim (maks. 20 karakter)',
+                      hintStyle: TextStyle(
+                        color: ValorantTheme.textMuted.withValues(alpha: 0.7),
+                        fontSize: 12,
+                      ),
+                      filled: true,
+                      fillColor: ValorantTheme.surfaceDark,
+                      counterStyle: const TextStyle(
+                        color: ValorantTheme.cyanNeon,
+                        fontSize: 10,
+                        fontFamily: 'monospace',
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(
+                          color: ValorantTheme.cyanNeon.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(
+                          color: ValorantTheme.cyanNeon,
+                          width: 1.8,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              height: 40,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: ValorantTheme.surfaceDark,
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                              ),
+                              child: const Text(
+                                'İPTAL',
+                                style: TextStyle(
+                                  color: ValorantTheme.textMuted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.5,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: _submit,
+                            child: Container(
+                              height: 40,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: ValorantTheme.cyanNeon.withValues(alpha: 0.2),
+                                border: Border.all(color: ValorantTheme.cyanNeon),
+                              ),
+                              child: const Text(
+                                'KAYDET',
+                                style: TextStyle(
+                                  color: ValorantTheme.cyanNeon,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Seçili Ajan Portresi (Varsayılan Brimstone iken fotoğrafını, diğer ajanlarda taktiksel ajan kartını gösterir)
+class BrimstoneAvatarWidget extends StatelessWidget {
+  final String agentName;
+
+  const BrimstoneAvatarWidget({
+    super.key,
+    this.agentName = 'Brimstone',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final agentInfo = valorantAgents.firstWhere(
+      (a) => a.name == agentName,
+      orElse: () => valorantAgents.first,
+    );
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -1579,17 +2431,81 @@ class BrimstoneAvatarWidget extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/images/brimstone_portrait.jpg',
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
-            errorBuilder: (context, error, stackTrace) {
-              return Image.asset(
-                'assets/images/brimstone.png',
-                fit: BoxFit.cover,
-              );
-            },
-          ),
+          if (agentInfo.portraitAsset != null)
+            Image.asset(
+              agentInfo.portraitAsset!,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
+                  'assets/images/brimstone.png',
+                  fit: BoxFit.cover,
+                );
+              },
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    agentInfo.accentColor.withValues(alpha: 0.30),
+                    const Color(0xFF0E3E48),
+                    const Color(0xFF092A32),
+                  ],
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 62,
+                    height: 62,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: agentInfo.accentColor.withValues(alpha: 0.18),
+                      border: Border.all(color: agentInfo.accentColor, width: 2.0),
+                    ),
+                    child: Text(
+                      agentInfo.name.substring(0, 1).toUpperCase(),
+                      style: TextStyle(
+                        color: agentInfo.accentColor,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    agentInfo.name.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2.5,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    color: agentInfo.accentColor.withValues(alpha: 0.25),
+                    child: Text(
+                      agentInfo.role,
+                      style: TextStyle(
+                        color: agentInfo.accentColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.8,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // Fotoğraftaki gibi alt kısımda ekranla bütünleşen hafif turkuaz gölge geçişi
           Positioned.fill(
             child: DecoratedBox(
