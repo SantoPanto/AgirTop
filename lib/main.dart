@@ -52,7 +52,7 @@ class AgirTopApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Ağır Top // Tactical Bracer',
+      title: 'AgirTop',
       debugShowCheckedModeBanner: false,
       // Hem fare hem dokunmatik girişleri destekleyen kaydırma davranışı
       scrollBehavior: const MaterialScrollBehavior().copyWith(
@@ -585,10 +585,9 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
   String _selectedAgent = 'Brimstone';
   String _displayName = 'Ben';
 
-  // Düşük gecikmeli ses oynatıcı
-  late final AudioPlayer _audioPlayer;
+  // Çoklu platform (Mobil & PC) uyumlu ön-yüklemeli ses havuzu
+  AudioPool? _audioPool;
   bool _isDisposed = false;
-  bool _isAudioBusy = false;
   DateTime? _lastFeedbackTime;
 
   @override
@@ -597,25 +596,38 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
     _initAudioPlayer();
   }
 
-  void _initAudioPlayer() {
-    _audioPlayer = AudioPlayer();
-    // Gecikmesiz ses çalabilmek için lowLatency moduna alıyoruz
-    _audioPlayer.setPlayerMode(PlayerMode.lowLatency);
-    _audioPlayer.setReleaseMode(ReleaseMode.stop);
-    _audioPlayer.setSource(AssetSource('sounds/transition.wav'));
+  Future<void> _initAudioPlayer() async {
+    try {
+      // PlayerMode.mediaPlayer + AudioPool: Android'de SoundPool'un completion
+      // göndermeme hatasını (1 kez çalıp susma) önler, tüm platformlarda önceden
+      // yüklü player havuzu ile sıfır gecikmeli ve tekrarlanabilir ses sağlar.
+      final pool = await AudioPool.createFromAsset(
+        path: 'sounds/transition.wav',
+        minPlayers: 2,
+        maxPlayers: 4,
+        playerMode: PlayerMode.mediaPlayer,
+      );
+      if (_isDisposed) {
+        await pool.dispose();
+        return;
+      }
+      _audioPool = pool;
+    } catch (e) {
+      debugPrint('Ses havuzu başlatma uyarısı: $e');
+    }
   }
 
   @override
   void dispose() {
     _isDisposed = true;
-    _audioPlayer.dispose();
+    _audioPool?.dispose();
     super.dispose();
   }
 
   /// Telefon çerçevesine tıklandığında (veya PC'de Boşluk/Enter basıldığında) çalışan çekirdek işlem:
-  /// 1. Titreşim (Mobil için - hızlı tıklamada IPC tıkanmaması için 80ms korumalı)
-  /// 2. transition.wav sesi (Platform kanalını kilitlememek için throttle & busy korumalı)
-  /// 3. isFirstScreen state'inin anında tersine çevrilmesi (Sonsuz döngü)
+  /// 1. isFirstScreen state'inin anında tersine çevrilmesi (Sonsuz döngü)
+  /// 2. Titreşim (Mobil için - hızlı tıklamada IPC tıkanmaması için 80ms korumalı)
+  /// 3. transition.wav sesi (AudioPool ile her tıklamada kesintisiz çalma)
   void _handleDeviceTap() {
     // 1. UI durumunu anında güncelle (sıfır gecikme)
     if (mounted) {
@@ -637,13 +649,11 @@ class _TelefonEkraniState extends State<TelefonEkrani> {
       HapticFeedback.lightImpact();
     } catch (_) {}
 
-    // 3. Gecikmesiz ses çalma (Önceki native çağrı bitmediyse kuyruğu şişirmemek için atlanır)
-    if (_isAudioBusy || _isDisposed) return;
-    _isAudioBusy = true;
-    _audioPlayer.play(AssetSource('sounds/transition.wav')).catchError((e) {
+    // 3. Havuzdan hazır bir player ile sesi başlat (her dokunuşta sıfırdan ve net çalar)
+    if (_isDisposed) return;
+    _audioPool?.start(volume: 1.0).catchError((Object e) {
       debugPrint('Ses çalma uyarısı: $e');
-    }).whenComplete(() {
-      _isAudioBusy = false;
+      return () async {};
     });
   }
 

@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "agir_top" "\0"
+            VALUE "FileDescription", "AgirTop" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "agir_top" "\0"
+            VALUE "InternalName", "AgirTop" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "agir_top.exe" "\0"
-            VALUE "ProductName", "agir_top" "\0"
+            VALUE "OriginalFilename", "AgirTop.exe" "\0"
+            VALUE "ProductName", "AgirTop" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

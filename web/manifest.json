@@ -1,6 +1,6 @@
 {
-    "name": "agir_top",
-    "short_name": "agir_top",
+    "name": "AgirTop",
+    "short_name": "AgirTop",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0F1923",
